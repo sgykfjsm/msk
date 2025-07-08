@@ -1,0 +1,51 @@
+package main
+
+import (
+	"context"
+	"log/slog"
+	"os"
+
+	"github.com/urfave/cli/v3"
+)
+
+var Version = "v0.1.0"
+
+func main() {
+	cmd := &cli.Command{
+		Name:    "msk",
+		Usage:   "Manage TiDB Cloud clusters, Support daily operations, and Keep your workloads efficient",
+		Version: Version,
+
+		Commands: []*cli.Command{
+			{
+				Name:  "clusterinfo",
+				Usage: "Get information about TiDB Clusters and save it to a database",
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					slog.Info("Collecting cluster information...")
+					return nil
+				},
+			},
+			{
+				Name:  "generate-notice",
+				Usage: "Generate a notice from the information collected by clusterinfo and save it to S3",
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					slog.Info("Generating notice from collected information...")
+					return nil
+				},
+			},
+			{
+				Name:  "notify",
+				Usage: "Notify via messaging service using the generated notice",
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					slog.Info("Sending notification with the generated notice...")
+					return nil
+				},
+			},
+		},
+	}
+
+	if err := cmd.Run(context.Background(), os.Args); err != nil {
+		slog.Error("Error running command", "error", err)
+		os.Exit(1)
+	}
+}
