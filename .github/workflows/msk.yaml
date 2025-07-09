@@ -22,9 +22,9 @@ jobs:
         with:
             go-version: '1.24.4'
       - name: Install dependencies
-        run: go mod download
+        run: make download
       - name: Build msk binary
-        run: go build -o msk main.go
+        run: make build
 
       - name: Upload binary
         uses: actions/upload-artifact@v4
@@ -42,7 +42,7 @@ jobs:
           name: msk-binary
       - run: chmod +x msk
       - name: Run msk clusterinfo
-        run: ./msk clusterinfo
+        run: make clusterinfo
   generate-notice:
     needs: clusterinfo
     runs-on: ubuntu-latest
@@ -53,7 +53,7 @@ jobs:
           name: msk-binary
       - run: chmod +x msk
       - name: Run msk generate-notice
-        run: ./msk generate-notice
+        run: make generate-notice
   notify:
     needs: generate-notice
     runs-on: ubuntu-latest
@@ -64,4 +64,4 @@ jobs:
           name: msk-binary
       - run: chmod +x msk
       - name: Run msk notify
-        run: ./msk notify
+        run: make notify
