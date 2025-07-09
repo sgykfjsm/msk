@@ -11,9 +11,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -22,13 +21,47 @@ jobs:
         uses: actions/setup-go@v5
         with:
             go-version: '1.24.4'
-
       - name: Install dependencies
         run: go mod download
+      - name: Build msk binary
+        run: go build -o msk main.go
 
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: msk-binary
+          path: msk
+
+  clusterinfo:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download msk binary
+        uses: actions/download-artifact@v4
+        with:
+          name: msk-binary
+      - run: chmod +x msk
       - name: Run msk clusterinfo
-        run: go run main.go clusterinfo
+        run: ./msk clusterinfo
+  generate-notice:
+    needs: clusterinfo
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download msk binary
+        uses: actions/download-artifact@v4
+        with:
+          name: msk-binary
+      - run: chmod +x msk
       - name: Run msk generate-notice
-        run: go run main.go generate-notice
+        run: ./msk generate-notice
+  notify:
+    needs: generate-notice
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download msk binary
+        uses: actions/download-artifact@v4
+        with:
+          name: msk-binary
+      - run: chmod +x msk
       - name: Run msk notify
-        run: go run main.go notify
+        run: ./msk notify
