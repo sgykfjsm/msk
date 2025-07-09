@@ -47,6 +47,12 @@ jobs:
     needs: clusterinfo
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: msk-binary
+
+      - uses: actions/checkout@v4
+
       - name: Download msk binary
         uses: actions/download-artifact@v4
         with:
@@ -58,10 +64,17 @@ jobs:
     needs: generate-notice
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: msk-binary
+
+      - uses: actions/checkout@v4
+
       - name: Download msk binary
         uses: actions/download-artifact@v4
         with:
           name: msk-binary
+
       - run: chmod +x msk
       - name: Run msk notify
         run: make notify
