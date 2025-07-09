@@ -26,6 +26,10 @@ clean:
 	rm -f $(BINARY_NAME)
 
 # Run commands
+.PHONY: fetch-projects
+fetch-projects:
+	./$(BINARY_NAME) fetch-projects
+
 .PHONY: clusterinfo
 clusterinfo:
 	./$(BINARY_NAME) clusterinfo

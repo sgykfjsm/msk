@@ -18,6 +18,14 @@ func main() {
 
 		Commands: []*cli.Command{
 			{
+				Name:  "fetch-projects",
+				Usage: "Fetch accessible projects from TiDB Cloud and save them to a database",
+				Action: func(ctx context.Context, c *cli.Command) error {
+					slog.Info("Fetching projects from TiDB Cloud...")
+					return nil
+				},
+			},
+			{
 				Name:  "clusterinfo",
 				Usage: "Get information about TiDB Clusters and save it to a database",
 				Action: func(ctx context.Context, cmd *cli.Command) error {
