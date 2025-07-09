@@ -16,6 +16,11 @@ dependencies:
 .PHONY: download
 download:
 	go mod download
+	go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+
+.PHONY: db-generate
+db-generate:
+	sqlc generate
 
 .PHONY: build
 build:
