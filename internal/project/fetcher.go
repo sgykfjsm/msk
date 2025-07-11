@@ -13,6 +13,22 @@ import (
 	"github.com/sgykfjsm/msk/internal/db"
 )
 
+// In this module, I will implement the following:
+// 1. Fetch projects from TiDB Cloud API
+//	- Endpoint: https://api.tidbcloud.com/v1beta/projects
+//	- Method: GET
+//	- Response: ListProjectResponse (defined above)
+//	- Ref: https://docs.pingcap.com/tidbcloud/api/v1beta/#tag/Project/operation/ListProjects
+//	- Note: This endpoint requires an API Key for authentication, which should be passed from the caller.
+// 	1.1 Initialize HTTP client with the API key passed from the caller
+// 	1.2 Make a GET request to the API endpoint
+// 	1.3 Parse the resp into ListProjectResponse struct
+// 	1.4 Handle errors appropriately (e.g., log and return error)
+// 	1.5 Return the parsed Projects slice to the caller
+// 2. Map the API resp to internal Project struct
+// 3. Store the projects in a MySQL-compatible database (TiDB)
+// That's all!
+
 // Project represents a TiDB Cloud project with relevant metadata.
 type Project struct {
 	ID              string `json:"id,omitempty"`
@@ -41,24 +57,6 @@ type ListProjectResponseError struct {
 	Details []string `json:"details,omitempty"`
 }
 
-const defaultAPIEndpoint = "https://api.tidbcloud.com/v1beta/projects"
-
-// In this module, I will implement the following:
-// 1. Fetch projects from TiDB Cloud API
-//	- Endpoint: https://api.tidbcloud.com/v1beta/projects
-//	- Method: GET
-//	- Response: ListProjectResponse (defined above)
-//	- Ref: https://docs.pingcap.com/tidbcloud/api/v1beta/#tag/Project/operation/ListProjects
-//	- Note: This endpoint requires an API Key for authentication, which should be passed from the caller.
-// 	1.1 Initialize HTTP client with the API key passed from the caller
-// 	1.2 Make a GET request to the API endpoint
-// 	1.3 Parse the resp into ListProjectResponse struct
-// 	1.4 Handle errors appropriately (e.g., log and return error)
-// 	1.5 Return the parsed Projects slice to the caller
-// 2. Map the API resp to internal Project struct
-// 3. Store the projects in a MySQL-compatible database (TiDB)
-// That's all!
-
 // ProjectFetcher defines the interface for fetching projects from TiDB Cloud.
 // It abstracts the logic of retrieving project data, allowing for easy testing and mocking.
 type ProjectFetcher interface {
@@ -75,6 +73,8 @@ type APIProjectFetcher struct {
 	Endpoint string
 	Client   *http.Client
 }
+
+const defaultAPIEndpoint = "https://api.tidbcloud.com/v1beta/projects"
 
 // NewAPIProjectFetcher creates a new instance of APIProjectFetcher.
 func NewAPIProjectFetcher(apiKey string, endpoint string, client *http.Client) *APIProjectFetcher {
@@ -127,26 +127,25 @@ func (f *APIProjectFetcher) FetchProjects(ctx context.Context, page int, pageSiz
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		if resp.StatusCode == http.StatusUnauthorized {
-			return nil, 0, fmt.Errorf("unauthorized: check your API key")
+	if resp.StatusCode == http.StatusOK {
+		var listProjectResponse ListProjectResponse
+		if err := json.NewDecoder(resp.Body).Decode(&listProjectResponse); err != nil {
+			return nil, 0, fmt.Errorf("failed to decode resp from TiDB Cloud API: %w", err)
 		}
-
-		// Decode the error response
-		var apiError ListProjectResponseError
-		if err := json.NewDecoder(resp.Body).Decode(&apiError); err != nil {
-			return nil, 0, fmt.Errorf("failed to decode error response from TiDB Cloud API: %w", err)
-		}
-		return nil, 0, fmt.Errorf("error from TiDB Cloud API: %s (code: %d, details: %v)", apiError.Message, apiError.Code, apiError.Details)
+		return listProjectResponse.Items, listProjectResponse.Total, nil
 	}
 
-	// Parse the resp body into ListProjectResponse
-	var listProjectResponse ListProjectResponse
-	if err := json.NewDecoder(resp.Body).Decode(&listProjectResponse); err != nil {
-		return nil, 0, fmt.Errorf("failed to decode resp from TiDB Cloud API: %w", err)
+	if resp.StatusCode == http.StatusUnauthorized {
+		return nil, 0, fmt.Errorf("unauthorized: check your API key")
 	}
 
-	return listProjectResponse.Items, listProjectResponse.Total, nil
+	// Decode the error response
+	var apiError ListProjectResponseError
+	if err := json.NewDecoder(resp.Body).Decode(&apiError); err != nil {
+		return nil, 0, fmt.Errorf("failed to decode error response from TiDB Cloud API: %w", err)
+	}
+	return nil, 0, fmt.Errorf("error from TiDB Cloud API: %s (code: %d, details: %v)", apiError.Message, apiError.Code, apiError.Details)
+
 }
 
 // ProjectStore defines the interface for storing projects in a database.
@@ -220,14 +219,12 @@ func (s *DBProjectStore) StoreProjects(ctx context.Context, projects Projects) e
 		}
 
 		if err := qtx.UpsertProject(ctx, values); err != nil {
-			var errs []error
-			errs = append(errs, fmt.Errorf("failed to upsert project %s: %w", project.ID, err))
-			// Stop the operation immediately if any error occurs
+			upsertErr := fmt.Errorf("failed to upsert project %s: %w", project.ID, err)
 			if err := tx.Rollback(); err != nil {
-				errs = append(errs, fmt.Errorf("failed to rollback transaction: %w", err))
+				return errors.Join(upsertErr, fmt.Errorf("failed to rollback transaction: %w", err))
 			}
 
-			return errors.Join(errs...)
+			return upsertErr
 		}
 	}
 
