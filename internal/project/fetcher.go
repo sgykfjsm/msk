@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -184,6 +185,7 @@ func (s *DBProjectStore) StoreProjects(ctx context.Context, projects Projects) e
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
+
 	qtx := s.Queries.WithTx(tx)
 	for _, project := range projects {
 		ct, err := strconv.ParseInt(project.CreateTimestamp, 10, 64)
@@ -201,9 +203,14 @@ func (s *DBProjectStore) StoreProjects(ctx context.Context, projects Projects) e
 		}
 
 		if err := qtx.UpsertProject(ctx, values); err != nil {
+			var errs []error
+			errs = append(errs, fmt.Errorf("failed to upsert project %s: %w", project.ID, err))
 			// Stop the operation immediately if any error occurs
-			tx.Rollback() // Rollback the transaction on error
-			return fmt.Errorf("failed to upsert project %s: %w", project.ID, err)
+			if err := tx.Rollback(); err != nil {
+				errs = append(errs, fmt.Errorf("failed to rollback transaction: %w", err))
+			}
+
+			return errors.Join(errs...)
 		}
 	}
 
