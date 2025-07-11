@@ -100,8 +100,10 @@ func (f *APIProjectFetcher) FetchProjects(page int, pageSize int) (Projects, int
 		return nil, 0, err
 	}
 	req.Header.Set("Authorization", "Bearer "+f.APIKey)
-	req.URL.Query().Set("page", fmt.Sprintf("%d", page))
-	req.URL.Query().Set("page_size", fmt.Sprintf("%d", pageSize))
+	q := req.URL.Query()
+	q.Set("page", fmt.Sprintf("%d", page))
+	q.Set("page_size", fmt.Sprintf("%d", pageSize))
+	req.URL.RawQuery = q.Encode()
 
 	// Request to the TiDB Cloud API
 	res, err := f.Client.Do(req)
