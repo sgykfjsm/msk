@@ -61,9 +61,10 @@ const defaultAPIEndpoint = "https://api.tidbcloud.com/v1beta/projects"
 // ProjectFetcher defines the interface for fetching projects from TiDB Cloud.
 // It abstracts the logic of retrieving project data, allowing for easy testing and mocking.
 type ProjectFetcher interface {
-	// FetchProjects retrieves the list of projects from TiDB Cloud.
+	// FetchProjects retrieves a list of projects from TiDB Cloud.
+	// It takes pagination parameters (page and pageSize) to control the number of projects returned
 	// It returns a slice of Project and an error if any.
-	FetchProjects() (Projects, error)
+	FetchProjects(page int, pageSize int) (Projects, error)
 }
 
 // APIProjectFetcher implements the ProjectFetcher interface.
