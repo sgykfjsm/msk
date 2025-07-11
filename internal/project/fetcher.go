@@ -64,7 +64,7 @@ type ProjectFetcher interface {
 	// FetchProjects retrieves a list of projects from TiDB Cloud.
 	// It takes pagination parameters (page and pageSize) to control the number of projects returned
 	// It returns a slice of Project and an error if any.
-	FetchProjects(page int, pageSize int) (Projects, error)
+	FetchProjects(ctx context.Context, page int, pageSize int) (Projects, error)
 }
 
 // APIProjectFetcher implements the ProjectFetcher interface.
@@ -93,12 +93,14 @@ func NewAPIProjectFetcher(apiKey string, endpoint string, client *http.Client) *
 // The second return value represents the total number of accessible projects.
 // If the value is greater than the number of returned projects, it indicates there are more projects available to fetch.
 // You can use the page and pageSize parameters to fetch the next page of projects.
-func (f *APIProjectFetcher) FetchProjects(page int, pageSize int) (Projects, int, error) {
+func (f *APIProjectFetcher) FetchProjects(ctx context.Context, page int, pageSize int) (Projects, int, error) {
 	// Set the API key in the request header to the HTTP Client
 	req, err := http.NewRequest("GET", f.Endpoint, nil)
 	if err != nil {
 		return nil, 0, err
 	}
+
+	req = req.WithContext(ctx)
 	req.Header.Set("Authorization", "Bearer "+f.APIKey)
 	q := req.URL.Query()
 	q.Set("page", fmt.Sprintf("%d", page))
