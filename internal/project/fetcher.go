@@ -169,6 +169,10 @@ func NewDBProjectStore(config mysql.Config, poolConfig *db.PoolConfig) (*DBProje
 	conn.SetMaxIdleConns(poolConfig.MaxIdleConns)
 	conn.SetConnMaxLifetime(poolConfig.ConnMaxLifetime)
 
+	if err := conn.Ping(); err != nil {
+		return nil, fmt.Errorf("failed to ping database: %w", err)
+	}
+
 	return &DBProjectStore{
 		Queries: db.New(conn),
 		conn:    conn,
