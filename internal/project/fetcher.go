@@ -140,7 +140,7 @@ func (f *APIProjectFetcher) FetchProjects(ctx context.Context, page int, pageSiz
 type ProjectStore interface {
 	// StoreProjects saves the provided projects to the database.
 	// It returns an error if the operation fails.
-	StoreProjects(projects Projects) error
+	StoreProjects(ctx context.Context, projects Projects) error
 }
 
 // DBProjectStore implements the ProjectStore interface.
@@ -238,13 +238,13 @@ func NewProjectService(fetcher ProjectFetcher, store ProjectStore) *ProjectServi
 
 // FetchAndStoreProjects fetches projects using the ProjectFetcher and processes them.
 // It returns an error if the fetching or processing fails.
-func (s ProjectService) FetchAndStoreProjects() error {
-	projects, err := s.fetcher.FetchProjects()
+func (s ProjectService) FetchAndStoreProjects(ctx context.Context, page int, pageSize int) error {
+	projects, err := s.fetcher.FetchProjects(ctx, page, pageSize)
 	if err != nil {
 		return err
 	}
 
-	if err := s.store.StoreProjects(projects); err != nil {
+	if err := s.store.StoreProjects(ctx, projects); err != nil {
 		return err
 	}
 
