@@ -167,7 +167,7 @@ func NewDBProjectStore(config mysql.Config) (*DBProjectStore, error) {
 	}, nil
 }
 
-func (s *DBProjectStore) StoreProjects(projects Projects) error {
+func (s *DBProjectStore) StoreProjects(ctx context.Context, projects Projects) error {
 	if len(projects) == 0 {
 		return nil // No projects to store, nothing to do
 	}
@@ -193,8 +193,7 @@ func (s *DBProjectStore) StoreProjects(projects Projects) error {
 			AwsCmekEnabled:  project.AwsCmekEnabled,
 		}
 
-		// TODO: Should I use context to timeout the operation?
-		if err := qtx.UpsertProject(context.Background(), values); err != nil {
+		if err := qtx.UpsertProject(ctx, values); err != nil {
 			// Stop the operation immediately if any error occurs
 			tx.Rollback() // Rollback the transaction on error
 			return fmt.Errorf("failed to upsert project %s: %w", project.ID, err)
