@@ -108,6 +108,14 @@ func (f *APIProjectFetcher) FetchProjects(ctx context.Context, page int, pageSiz
 	req = req.WithContext(ctx)
 	req.Header.Set("Authorization", "Bearer "+f.APIKey)
 	q := req.URL.Query()
+	if page <= 0 {
+		page = 1 // Default to page 1 if not provided or invalid
+	}
+
+	if pageSize <= 0 {
+		pageSize = 20 // Default to 20 if not provided or invalid
+	}
+
 	q.Set("page", fmt.Sprintf("%d", page))
 	q.Set("page_size", fmt.Sprintf("%d", pageSize))
 	req.URL.RawQuery = q.Encode()
