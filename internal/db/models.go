@@ -5,16 +5,16 @@
 package db
 
 import (
-	"time"
+	"database/sql"
 )
 
 type Project struct {
 	ID              string
 	OrgID           string
 	Name            string
-	ClusterCount    int32
-	UserCount       int32
-	CreateTimestamp int64
-	AwsCmekEnabled  bool
-	FetchedAt       time.Time
+	ClusterCount    sql.NullInt32
+	UserCount       sql.NullInt32
+	CreateTimestamp sql.NullInt64
+	AwsCmekEnabled  sql.NullBool
+	FetchedAt       sql.NullTime
 }

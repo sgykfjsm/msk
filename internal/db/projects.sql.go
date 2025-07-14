@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const upsertProject = `-- name: UpsertProject :exec
@@ -35,10 +36,10 @@ type UpsertProjectParams struct {
 	ID              string
 	OrgID           string
 	Name            string
-	ClusterCount    int32
-	UserCount       int32
-	CreateTimestamp int64
-	AwsCmekEnabled  bool
+	ClusterCount    sql.NullInt32
+	UserCount       sql.NullInt32
+	CreateTimestamp sql.NullInt64
+	AwsCmekEnabled  sql.NullBool
 }
 
 func (q *Queries) UpsertProject(ctx context.Context, arg UpsertProjectParams) error {
