@@ -20,13 +20,23 @@ func NewProjectService(fetcher ProjectFetcher, store ProjectStore) *ProjectServi
 // FetchAndStoreProjects fetches projects using the ProjectFetcher and processes them.
 // It returns an error if the fetching or processing fails.
 func (s ProjectService) FetchAndStoreProjects(ctx context.Context, page int, pageSize int) error {
-	projects, err := s.fetcher.FetchProjects(ctx, page, pageSize)
-	if err != nil {
-		return err
-	}
+	var processedProjectsNum int
 
-	if err := s.store.StoreProjects(ctx, projects); err != nil {
-		return err
+	for {
+		projects, totalProjectNum, err := s.fetcher.FetchProjects(ctx, page, pageSize)
+		if err != nil {
+			return err
+		}
+
+		if err := s.store.StoreProjects(ctx, projects); err != nil {
+			return err
+		}
+
+		processedProjectsNum += len(projects)
+		if processedProjectsNum >= totalProjectNum {
+			break
+		}
+		page++ // Increment the page number to fetch the next set of projects
 	}
 
 	return nil
