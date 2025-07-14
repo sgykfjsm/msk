@@ -40,10 +40,9 @@ type Project struct {
 	AwsCmekEnabled  bool   `json:"aws_cmek_enabled,omitempty"`
 }
 
-// Projects is a slice of Project, used for API responses.
-type Projects []Project
+type Projects []Project // Projects represents a list of projects returned by the TiDB Cloud API.
 
-// ListProjectResponse represents the resp structure for listing projects.
+// ListProjectResponse represents the response structure for listing projects.
 // Ref: https://docs.pingcap.com/tidbcloud/api/v1beta/#tag/Project/operation/ListProjects
 type ListProjectResponse struct {
 	Items Projects `json:"items,omitempty"`
