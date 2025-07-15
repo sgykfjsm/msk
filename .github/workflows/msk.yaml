@@ -1,5 +1,5 @@
 ---
-name: Test msk CLI
+name: MSK CI/CD Workflow
 
 on:
   push:
@@ -24,6 +24,9 @@ jobs:
             go-version: '1.24.4'
       - name: Install dependencies
         run: make download
+
+      - name: Run test
+        run: make test
 
       - name: Build msk binary
         run: make build
