@@ -2,6 +2,7 @@ package project
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -53,4 +54,50 @@ func TestProjectService_FetchAndStoreProjects_Success(t *testing.T) {
 
 	err := svc.FetchAndStoreProjects(ctx, 1, 2)
 	require.NoError(t, err)
+}
+
+func TestProjectService_FetchAndStoreProjects_Fetch_Error(t *testing.T) {
+	ctx := context.Background()
+
+	// Create a mock fetcher that returns an error
+	mockFetcher := NewMockProjectFetcher(t)
+	mockStore := NewMockProjectStore(t)
+	svc := NewProjectService(mockFetcher, mockStore)
+
+	// Test scenario: Fetching projects fails
+	mockFetcher.EXPECT().
+		FetchProjects(ctx, 1, 2).
+		Return(nil, 0, errors.New("failed to fetch project")).
+		Times(1)
+
+	err := svc.FetchAndStoreProjects(ctx, 1, 2)
+	require.Error(t, err)
+}
+
+func TestProjectService_FetchAndStoreProjects_Store_Error(t *testing.T) {
+	ctx := context.Background()
+
+	// Create a mock fetcher and store
+	mockFetcher := NewMockProjectFetcher(t)
+	mockStore := NewMockProjectStore(t)
+	svc := NewProjectService(mockFetcher, mockStore)
+
+	// Define test data
+	projectPage1 := Projects{
+		{ID: "1", OrgID: "org1", Name: "Project1", ClusterCount: 2, UserCount: 5, CreateTimestamp: "1622547800", AwsCmekEnabled: true},
+	}
+
+	// Test scenario: Fetching projects succeeds but storing fails
+	mockFetcher.EXPECT().
+		FetchProjects(ctx, 1, 2).
+		Return(projectPage1, 1, nil).
+		Times(1)
+
+	mockStore.EXPECT().
+		StoreProjects(ctx, projectPage1).
+		Return(errors.New("failed to store project")).
+		Times(1)
+
+	err := svc.FetchAndStoreProjects(ctx, 1, 2)
+	require.Error(t, err)
 }
