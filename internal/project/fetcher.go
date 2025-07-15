@@ -129,13 +129,13 @@ func (f *APIProjectFetcher) FetchProjects(ctx context.Context, page int, pageSiz
 	if resp.StatusCode == http.StatusOK {
 		var listProjectResponse ListProjectResponse
 		if err := json.NewDecoder(resp.Body).Decode(&listProjectResponse); err != nil {
-			return nil, 0, fmt.Errorf("failed to decode resp from TiDB Cloud API: %w", err)
+			return nil, 0, fmt.Errorf("failed to decode response from TiDB Cloud API: %w", err)
 		}
 		return listProjectResponse.Items, listProjectResponse.Total, nil
 	}
 
 	if resp.StatusCode == http.StatusUnauthorized {
-		return nil, 0, fmt.Errorf("unauthorized: check your API key")
+		return nil, 0, errors.New("unauthorized: check your API key")
 	}
 
 	// Decode the error response

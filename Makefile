@@ -26,6 +26,10 @@ db-generate:
 build:
 	go build -ldflags "$(LDFLAGS)" -o $(BINARY_NAME) .
 
+.PHONY: test
+test:
+	go test -v ./internal/project
+
 .PHONY: clean
 clean:
 	rm -f $(BINARY_NAME)
