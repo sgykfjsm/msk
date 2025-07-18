@@ -4,6 +4,7 @@
         "mskcmd",
         "VPCID",
         "vpcinfo",
-        "vpcpeering"
+        "vpcpeering",
+        "vpcrtb"
     ]
 }
