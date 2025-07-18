@@ -26,7 +26,6 @@ func PrintAWSVariables(ctx context.Context, w io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("unable to retrieve AWS credentials: %w", err)
 	}
-	credentials.
 
 	fmt.Fprintln(w, "AWS Context variables")
 	fmt.Fprintf(w, "    Account ID: %s\n", accountID)
