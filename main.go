@@ -52,6 +52,7 @@ func main() {
 			},
 			mskcmd.ShowVPCInfoCmd,
 			mskcmd.AcceptPeeringCmd,
+			mskcmd.UpdateRoutesCmd,
 		},
 	}
 
