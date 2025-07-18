@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 
+	mskcmd "github.com/sgykfjsm/msk/cmd"
 	"github.com/urfave/cli/v3"
 )
 
@@ -49,6 +50,7 @@ func main() {
 					return nil
 				},
 			},
+			mskcmd.ShowVPCInfoCmd,
 		},
 	}
 
