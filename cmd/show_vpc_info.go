@@ -21,7 +21,7 @@ var ShowVPCInfoCmd = &cli.Command{
 		},
 		&cli.StringFlag{
 			Name:  "output",
-			Usage: "Output format (json, yaml, text)",
+			Usage: "Output format (json, yaml, text) case-insensitive, defaults to text",
 			Value: "text",
 		},
 		&cli.BoolFlag{
@@ -40,7 +40,7 @@ var ShowVPCInfoCmd = &cli.Command{
 
 		outputFormat := c.String("output")
 		allowedFormats := map[string]bool{"json": true, "yaml": true, "text": true}
-		if !allowedFormats[outputFormat] {
+		if !allowedFormats[strings.ToLower(outputFormat)] {
 			return fmt.Errorf("invalid output format: %s, allowed formats are: %v", outputFormat, allowedFormats)
 		}
 
