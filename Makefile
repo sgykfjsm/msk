@@ -29,6 +29,7 @@ build:
 .PHONY: test
 test:
 	go test -v ./internal/project
+	go test -v ./internal/vpcinfo
 
 .PHONY: clean
 clean:
