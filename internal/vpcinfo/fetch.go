@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -91,6 +92,15 @@ func FetchVPCInfo(ctx context.Context, vpcID string) (*VPCInfo, error) {
 }
 
 func (v *VPCInfo) PrintAs(format string, w io.Writer) error {
+	format = strings.ToLower(format)
+	if format != "json" && format != "yaml" && format != "text" {
+		return fmt.Errorf("invalid output format: %s, allowed formats are: json, yaml, text", format)
+	}
+
+	if w == nil {
+		return fmt.Errorf("writer cannot be nil")
+	}
+
 	switch format {
 	case "json":
 		data, err := v.ToJSON()
