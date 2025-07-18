@@ -3,6 +3,7 @@
         "clusterinfo",
         "mskcmd",
         "VPCID",
-        "vpcinfo"
+        "vpcinfo",
+        "vpcpeering"
     ]
 }
