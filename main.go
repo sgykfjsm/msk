@@ -51,6 +51,7 @@ func main() {
 				},
 			},
 			mskcmd.ShowVPCInfoCmd,
+			mskcmd.AcceptPeeringCmd,
 		},
 	}
 
