@@ -8,7 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/sgykfjsm/msk/internal/util"
 	"gopkg.in/yaml.v3"
 )
 
@@ -81,13 +81,11 @@ func FetchVPCInfo(ctx context.Context, vpcID string) (*VPCInfo, error) {
 	vpcInfo.CIDRBlock = *targetVPC.CidrBlock // // We need the primary IPv4 CIDR block for the VPC.
 
 	// Fetch the AWS account ID
-	stsClient := sts.NewFromConfig(cfg)
-	// Ref: https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/service/sts#Client.GetCallerIdentity
-	identity, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+	accountID, err := util.GetCallerAccountID(ctx, cfg)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get caller identity: %w", err)
+		return nil, fmt.Errorf("failed to get AWS account ID: %w", err)
 	}
-	vpcInfo.AccountID = *identity.Account // The AWS account ID of the caller
+	vpcInfo.AccountID = accountID
 
 	return vpcInfo, nil
 }
