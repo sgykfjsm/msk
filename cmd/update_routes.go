@@ -68,7 +68,6 @@ var UpdateRoutesCmd = &cli.Command{
 			}
 
 			util.PrintAWSVariables(ctx, c.Root().Writer)
-			return nil
 		}
 
 		if err := vpcrtb.UpdateRoutes(ctx, vpcID, cidr, peerID, dryRun, c.Root().Writer); err != nil {

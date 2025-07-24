@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 )
 
@@ -44,4 +46,18 @@ func GetCallerAccountID(ctx context.Context, cfg aws.Config) (string, error) {
 	}
 
 	return aws.ToString(output.Account), nil
+}
+
+func GetNameFromTags(tags []ec2types.Tag) string {
+	if tags == nil {
+		return ""
+	}
+
+	for _, tag := range tags {
+		if strings.ToLower(aws.ToString(tag.Key)) == "name" {
+			return aws.ToString(tag.Value)
+		}
+	}
+
+	return ""
 }
