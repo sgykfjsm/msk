@@ -69,16 +69,42 @@ func UpdateRoutes(ctx context.Context, vpcID, cidr, peerID string, dryRun bool, 
 			if dryRun {
 				fmt.Fprintf(w, "[DRY RUN] Would add route for CIDR %s to route table %q (ID: %s) with peer ID %s\n",
 					cidr, rtbName, rtbID, peerID)
-			} else {
-				// TODO: Add a new route
+				continue
 			}
+
+			params := &ec2.CreateRouteInput{
+				RouteTableId:           aws.String(rtbID),
+				DestinationCidrBlock:   aws.String(cidr),
+				VpcPeeringConnectionId: aws.String(peerID),
+			}
+
+			// Ref: https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/service/ec2#Client.CreateRoute
+			if _, err := ec2Client.CreateRoute(ctx, params); err != nil {
+				return fmt.Errorf("failed to create route for CIDR %s in route table %q (ID: %s): %w",
+					cidr, rtbName, rtbID, err)
+			}
+			fmt.Fprintf(w, "[SUCCESS] Route for CIDR %s added to route table %q (ID: %s) with peer ID %s\n",
+				cidr, rtbName, rtbID, peerID)
+
 		case updateNeeded: // Route found but needs update
 			if dryRun {
-					fmt.Fprintf(w, "[DRY RUN] Would update route for CIDR %s in route table %q (ID: %s) from peer ID %s to peer ID %s\n",
-						cidr, rtbName, rtbID, currentPeerID, peerID)
-			} else {
-				// TODO: Update the route
+				fmt.Fprintf(w, "[DRY RUN] Would update route for CIDR %s in route table %q (ID: %s) from peer ID %s to peer ID %s\n",
+					cidr, rtbName, rtbID, currentPeerID, peerID)
+				continue
 			}
+			// Ref: https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/service/ec2#Client.ReplaceRoute
+			param := &ec2.ReplaceRouteInput{
+				RouteTableId:           aws.String(rtbID),
+				DestinationCidrBlock:   aws.String(cidr),
+				VpcPeeringConnectionId: aws.String(peerID),
+			}
+			if _, err := ec2Client.ReplaceRoute(ctx, param); err != nil {
+				return fmt.Errorf("failed to replace route for CIDR %s in route table %q (ID: %s): %w",
+					cidr, rtbName, rtbID, err)
+			}
+			fmt.Fprintf(w, "[SUCCESS] Route for CIDR %s updated in route table %q (ID: %s) from peer ID %s to peer ID %s\n",
+				cidr, rtbName, rtbID, currentPeerID, peerID)
+
 		default: // Route found and no update needed
 			fmt.Fprintf(w, "Route for CIDR %s already exists in route table %q (ID: %s) with peer ID %s, skipping\n",
 				cidr, rtbName, rtbID, peerID)
