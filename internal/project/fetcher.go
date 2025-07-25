@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"time"
 
+	_ "github.com/go-sql-driver/mysql"
+
 	"github.com/sgykfjsm/msk/internal/db"
 )
 
