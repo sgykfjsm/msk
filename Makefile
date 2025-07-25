@@ -30,6 +30,7 @@ build:
 test:
 	go test -v ./internal/project
 	go test -v ./internal/vpcinfo
+	go test -v ./cmd
 
 .PHONY: clean
 clean:
