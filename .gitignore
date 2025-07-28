@@ -69,4 +69,5 @@ Temporary Items
 *.vsix
 
 # ----
+msk
 ./msk

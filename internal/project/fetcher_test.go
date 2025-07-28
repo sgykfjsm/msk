@@ -33,7 +33,7 @@ func TestAPIProjectFetcher_FetchProjects_Success(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
-	fetcher := NewAPIProjectFetcher("dummy-token", server.URL, server.Client())
+	fetcher := NewAPIProjectFetcher("dummy-token", "dummy-secret", server.URL)
 	projects, total, err := fetcher.FetchProjects(ctx, 1, 10)
 
 	require.NoError(t, err)
@@ -49,7 +49,7 @@ func TestAPIProjectFetcher_FetchProjects_Unauthorized(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
-	fetcher := NewAPIProjectFetcher("invalid-token", server.URL, server.Client())
+	fetcher := NewAPIProjectFetcher("invalid-token", "dummy-secret", server.URL)
 	_, _, err := fetcher.FetchProjects(context.Background(), 1, 10)
 
 	require.Error(t, err)
@@ -74,7 +74,7 @@ func TestAPIProjectFetcher_FetchProjects_HTTPError(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
-	fetcher := NewAPIProjectFetcher("dummy-token", server.URL, server.Client())
+	fetcher := NewAPIProjectFetcher("dummy-token", "dummy-secret", server.URL)
 	_, _, err := fetcher.FetchProjects(context.Background(), 1, 10)
 
 	require.Error(t, err)
@@ -95,7 +95,7 @@ func TestAPIProjectFetcher_FetchProjects_DecodeError(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
-	fetcher := NewAPIProjectFetcher("dummy-token", server.URL, server.Client())
+	fetcher := NewAPIProjectFetcher("dummy-token", "dummy-secret", server.URL)
 	_, _, err := fetcher.FetchProjects(context.Background(), 1, 10)
 
 	require.Error(t, err)
@@ -114,7 +114,7 @@ func TestAPIProjectFetcher_FetchProjects_DecodeErrorResponseError(t *testing.T) 
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
-	fetcher := NewAPIProjectFetcher("dummy-token", server.URL, server.Client())
+	fetcher := NewAPIProjectFetcher("dummy-token", "dummy-secret", server.URL)
 	_, _, err := fetcher.FetchProjects(context.Background(), 1, 10)
 
 	require.Error(t, err)

@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"github.com/sgykfjsm/msk/internal/project"
 	"github.com/sgykfjsm/msk/internal/util"
@@ -15,19 +14,21 @@ var FetchProjectsCmd = &cli.Command{
 	Usage: "Fetch and store projects from the TiDB Cloud API",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
-			Name:     "org-id",
-			Usage:    "Target organization ID to fetch projects for",
-			Required: true,
-		},
-		&cli.StringFlag{
 			Name:  "api-endpoint",
 			Usage: "TiDB Cloud API endpoint",
 			Value: "https://api.tidbcloud.com/v1beta/projects",
 		},
 		&cli.StringFlag{
-			Name:    "api-token",
-			Usage:   "API token for authentication with TiDB Cloud API",
-			Sources: cli.EnvVars("MSK_API_TOKEN"),
+			Name:    "api-key",
+			Usage:   "API key for authentication with TiDB Cloud API",
+			Sources: cli.EnvVars("MSK_API_KEY"),
+			Hidden:  true, // accept only from environment variable
+		},
+		&cli.StringFlag{
+			Name:    "api-secret",
+			Usage:   "API secret for authentication with TiDB Cloud API",
+			Sources: cli.EnvVars("MSK_API_SECRET"),
+			Hidden:  true, // accept only from environment variable
 		},
 		&cli.IntFlag{
 			Name:  "page",
@@ -64,6 +65,7 @@ var FetchProjectsCmd = &cli.Command{
 			Usage:   "Database password for storing projects",
 			Sources: cli.EnvVars("MSK_DB_PASSWORD"),
 			Value:   "",
+			Hidden:  true, // accept only from environment variable
 		},
 	},
 	Action: func(ctx context.Context, c *cli.Command) error {
@@ -82,7 +84,7 @@ func runFetchProjects(ctx context.Context, c *cli.Command) error {
 	dbDSN := util.GetDBConnectionString(args.DBHost, args.DBUser, args.DBPassword, args.DBName, args.DBPort)
 
 	// Initialize fetcher with the API endpoint and token
-	fetcher := project.NewAPIProjectFetcher(args.APIToken, args.APIEndpoint, http.DefaultClient)
+	fetcher := project.NewAPIProjectFetcher(args.APIKey, args.APISecret, args.APIEndpoint)
 
 	// Initialize the store service with the database connection string
 	store, err := project.NewDBProjectStore(dbDSN, nil) // Assuming no special pool config needed
@@ -107,8 +109,8 @@ func runFetchAndStoreProjectsService(ctx context.Context, fetcher project.Projec
 }
 
 type fetchProjectArgs struct {
-	OrgID       string
-	APIToken    string
+	APIKey      string
+	APISecret   string
 	APIEndpoint string
 	Page        int
 	PageSize    int
@@ -121,8 +123,8 @@ type fetchProjectArgs struct {
 
 func parseFetchProjectArgs(c *cli.Command) *fetchProjectArgs {
 	return &fetchProjectArgs{
-		OrgID:       c.String("org-id"),
-		APIToken:    c.String("api-token"),
+		APIKey:      c.String("api-key"),
+		APISecret:   c.String("api-secret"),
 		APIEndpoint: c.String("api-endpoint"),
 		Page:        c.Int("page"),
 		PageSize:    c.Int("page-size"),
@@ -135,11 +137,12 @@ func parseFetchProjectArgs(c *cli.Command) *fetchProjectArgs {
 }
 
 func validateFetchProjectArgs(v *fetchProjectArgs) error {
-	if v.OrgID == "" {
-		return fmt.Errorf("organization ID is not allowed to be empty")
+	if v.APIKey == "" {
+		return fmt.Errorf("API key is not allowed to be empty")
 	}
-	if v.APIToken == "" {
-		return fmt.Errorf("API token is not allowed to be empty")
+
+	if v.APISecret == "" {
+		return fmt.Errorf("API secret is not allowed to be empty")
 	}
 
 	return nil

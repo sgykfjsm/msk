@@ -10,19 +10,19 @@ func TestFetchProjects_validateFetchProjectArgs(t *testing.T) {
 	}{
 		{
 			name:  "valid args",
-			args:  &fetchProjectArgs{OrgID: "testOrg123", APIToken: "test-token"},
+			args:  &fetchProjectArgs{APIKey: "test-token", APISecret: "test-secret"},
 			isErr: false,
 		}, {
-			name:  "org-id is empty",
-			args:  &fetchProjectArgs{OrgID: "", APIToken: "test-token"},
+			name:  "api-key is empty",
+			args:  &fetchProjectArgs{APIKey: "", APISecret: "test-secret"},
 			isErr: true,
 		}, {
-			name:  "api-token is empty",
-			args:  &fetchProjectArgs{OrgID: "testOrg123", APIToken: ""},
+			name:  "api-secret is empty",
+			args:  &fetchProjectArgs{APIKey: "test-token", APISecret: ""},
 			isErr: true,
 		}, {
-			name:  "both empty",
-			args:  &fetchProjectArgs{OrgID: "", APIToken: ""},
+			name:  "all empty",
+			args:  &fetchProjectArgs{APIKey: "", APISecret: ""},
 			isErr: true,
 		},
 	}
