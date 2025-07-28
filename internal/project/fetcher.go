@@ -35,12 +35,12 @@ import (
 // Project represents a TiDB Cloud project with relevant metadata.
 type Project struct {
 	ID              string `json:"id,omitempty"`
-	OrgID           string `json:"org_id,omitempty"`
+	OrgID           string `json:"orgId,omitempty"`
 	Name            string `json:"name,omitempty"`
-	ClusterCount    int    `json:"cluster_count,omitempty"`
-	UserCount       int    `json:"user_count,omitempty"`
-	CreateTimestamp string `json:"create_timestamp,omitempty"`
-	AwsCmekEnabled  bool   `json:"aws_cmek_enabled,omitempty"`
+	ClusterCount    int    `json:"clusterCount,omitempty"`
+	UserCount       int    `json:"userCount,omitempty"`
+	CreateTimestamp string `json:"createTimestamp,omitempty"`
+	AwsCmekEnabled  bool   `json:"awsCmekEnabled,omitempty"`
 }
 
 type Projects []Project // Projects represents a list of projects returned by the TiDB Cloud API.
@@ -151,7 +151,7 @@ func (f *APIProjectFetcher) FetchProjects(ctx context.Context, page int, pageSiz
 		return nil, 0, fmt.Errorf("failed to decode error response from TiDB Cloud API: %w, status: %s", err, resp.Status)
 	}
 
-	return nil, 0, fmt.Errorf("error from TiDB Cloud API: %s (code: %d, details: %v), status: %s", apiError.Message, apiError.Code, apiError.Details, resp.Status)
+	return nil, 0, fmt.Errorf("error from TiDB Cloud API: %s (code: %d, details: %v, endpoint: %s), status: %s", apiError.Message, apiError.Code, apiError.Details, f.Endpoint, resp.Status)
 
 }
 

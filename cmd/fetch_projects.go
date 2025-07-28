@@ -16,7 +16,7 @@ var FetchProjectsCmd = &cli.Command{
 		&cli.StringFlag{
 			Name:  "api-endpoint",
 			Usage: "TiDB Cloud API endpoint",
-			Value: "https://api.tidbcloud.com/v1beta/projects",
+			Value: "https://api.tidbcloud.com/api/v1beta/projects",
 		},
 		&cli.StringFlag{
 			Name:    "api-key",
@@ -93,7 +93,7 @@ func runFetchProjects(ctx context.Context, c *cli.Command) error {
 	}
 
 	if err := runFetchAndStoreProjectsService(ctx, fetcher, store, args.Page, args.PageSize); err != nil {
-		return fmt.Errorf("failed to fetch and store projects: %w", err)
+		return err
 	}
 
 	fmt.Fprintln(c.Root().Writer, "Projects fetched and stored successfully.")
@@ -102,7 +102,7 @@ func runFetchProjects(ctx context.Context, c *cli.Command) error {
 
 func runFetchAndStoreProjectsService(ctx context.Context, fetcher project.ProjectFetcher, store project.ProjectStore, page int, pageSize int) error {
 	if err := project.NewProjectService(fetcher, store).FetchAndStoreProjects(ctx, page, pageSize); err != nil {
-		return fmt.Errorf("failed to fetch and store projects: %w", err)
+		return err
 	}
 
 	return nil
