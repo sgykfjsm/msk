@@ -12,6 +12,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 
+	"github.com/icholy/digest"
 	"github.com/sgykfjsm/msk/internal/db"
 )
 
@@ -68,29 +69,25 @@ type ProjectFetcher interface {
 }
 
 // APIProjectFetcher implements the ProjectFetcher interface.
-// It uses an HTTP client to make requests to the TiDB Cloud API to fetch project data
+// Fetcher is expected to use HTTP client generated from the library github.com/icholy/digest
 type APIProjectFetcher struct {
-	APIKey   string
-	Endpoint string
-	Client   *http.Client
+	APIKey    string // Public Key
+	APISecret string // Private Key
+	Endpoint  string
 }
 
 const defaultAPIEndpoint = "https://api.tidbcloud.com/v1beta/projects"
 
 // NewAPIProjectFetcher creates a new instance of APIProjectFetcher.
-func NewAPIProjectFetcher(apiKey string, endpoint string, client *http.Client) *APIProjectFetcher {
+func NewAPIProjectFetcher(apiKey, apiSecret string, endpoint string) *APIProjectFetcher {
 	if endpoint == "" {
 		endpoint = defaultAPIEndpoint // Use default endpoint if not provided
 	}
 
-	if client == nil {
-		client = http.DefaultClient // Use default HTTP client if none provided
-	}
-
 	return &APIProjectFetcher{
-		APIKey:   apiKey,
-		Endpoint: endpoint,
-		Client:   client,
+		APIKey:    apiKey,
+		APISecret: apiSecret,
+		Endpoint:  endpoint,
 	}
 }
 
@@ -100,14 +97,19 @@ func NewAPIProjectFetcher(apiKey string, endpoint string, client *http.Client) *
 // If the value is greater than the number of returned projects, it indicates there are more projects available to fetch.
 // You can use the page and pageSize parameters to fetch the next page of projects.
 func (f *APIProjectFetcher) FetchProjects(ctx context.Context, page int, pageSize int) (Projects, int, error) {
+	transport := &digest.Transport{
+		Username: f.APIKey,
+		Password: f.APISecret,
+	}
+	client := &http.Client{Transport: transport}
+
 	// Set the API key in the request header to the HTTP Client
 	req, err := http.NewRequest("GET", f.Endpoint, nil)
 	if err != nil {
 		return nil, 0, err
 	}
-
 	req = req.WithContext(ctx)
-	req.Header.Set("Authorization", "Bearer "+f.APIKey)
+
 	q := req.URL.Query()
 	if page <= 0 {
 		page = 1 // Default to page 1 if not provided or invalid
@@ -122,7 +124,7 @@ func (f *APIProjectFetcher) FetchProjects(ctx context.Context, page int, pageSiz
 	req.URL.RawQuery = q.Encode()
 
 	// Request to the TiDB Cloud API
-	resp, err := f.Client.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -131,21 +133,25 @@ func (f *APIProjectFetcher) FetchProjects(ctx context.Context, page int, pageSiz
 	if resp.StatusCode == http.StatusOK {
 		var listProjectResponse ListProjectResponse
 		if err := json.NewDecoder(resp.Body).Decode(&listProjectResponse); err != nil {
-			return nil, 0, fmt.Errorf("failed to decode response from TiDB Cloud API: %w", err)
+			return nil, 0, fmt.Errorf("succeeded to request, but failed to decode response from TiDB Cloud API: %w", err)
 		}
+
 		return listProjectResponse.Items, listProjectResponse.Total, nil
 	}
 
 	if resp.StatusCode == http.StatusUnauthorized {
 		return nil, 0, errors.New("unauthorized: check your API key")
+	} else if resp.StatusCode == http.StatusTooManyRequests {
+		return nil, 0, errors.New("rate limit: retry after some minutes. See https://docs.pingcap.com/tidbcloud/api/v1beta/#section/Rate-Limiting")
 	}
 
 	// Decode the error response
 	var apiError ListProjectResponseError
 	if err := json.NewDecoder(resp.Body).Decode(&apiError); err != nil {
-		return nil, 0, fmt.Errorf("failed to decode error response from TiDB Cloud API: %w", err)
+		return nil, 0, fmt.Errorf("failed to decode error response from TiDB Cloud API: %w, status: %s", err, resp.Status)
 	}
-	return nil, 0, fmt.Errorf("error from TiDB Cloud API: %s (code: %d, details: %v)", apiError.Message, apiError.Code, apiError.Details)
+
+	return nil, 0, fmt.Errorf("error from TiDB Cloud API: %s (code: %d, details: %v), status: %s", apiError.Message, apiError.Code, apiError.Details, resp.Status)
 
 }
 
