@@ -10,3 +10,42 @@ CREATE TABLE IF NOT EXISTS projects (
     aws_cmek_enabled BOOLEAN NOT NULL DEFAULT FALSE,
     fetched_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
+
+-- This table is based on the response from the TiDB Cloud API "Get a cluster by ID."
+-- Especially, focusing on the cluster meta data
+-- https://docs.pingcap.com/tidbcloud/api/v1beta/#tag/Cluster/operation/GetCluster
+CREATE TABLE IF NOT EXISTS clusters (
+    id VARCHAR(64) PRIMARY KEY,
+    project_id VARCHAR(64) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    cluster_type VARCHAR(32) NOT NULL,
+    cloud_provider VARCHAR(32) NOT NULL,
+    region VARCHAR(32) NOT NULL,
+    create_timestamp BIGINT NOT NULL,
+    tidb_version VARCHAR(32),
+    cluster_status VARCHAR(32),
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at DATETIME,
+    FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE
+);
+
+-- This table is based on the response from the TiDB Cloud API "Get a cluster by ID."
+-- Especially, focusing on the cluster node information
+-- https://docs.pingcap.com/tidbcloud/api/v1beta/#tag/Cluster/operation/GetCluster
+CREATE TABLE IF NOT EXISTS cluster_nodes (
+    cluster_id VARCHAR(64) NOT NULL,
+    node_name VARCHAR(128) NOT NULL,
+    component_type VARCHAR(32) NOT NULL,
+    availability_zone VARCHAR(64) NOT NULL,
+    node_size VARCHAR(32) NOT NULL,
+    storage_size_gib INT,
+    status VARCHAR(64) NOT NULL,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at DATETIME,
+    PRIMARY KEY unique_node (cluster_id, node_name),
+    FOREIGN KEY (cluster_id) REFERENCES clusters (id) ON DELETE CASCADE
+);

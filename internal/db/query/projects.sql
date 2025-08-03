@@ -18,3 +18,17 @@ ON DUPLICATE KEY UPDATE
     user_count = VALUES(user_count),
     create_timestamp = VALUES(create_timestamp),
     aws_cmek_enabled = VALUES(aws_cmek_enabled);
+
+-- name: ListProjectIDsWithClusters :many
+SELECT
+    id
+FROM
+    projects
+WHERE
+    cluster_count > 0
+    AND DATE(fetched_at) = (
+        SELECT
+            DATE(MAX(fetched_at))
+        FROM
+            projects
+    );

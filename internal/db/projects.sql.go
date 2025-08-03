@@ -9,6 +9,44 @@ import (
 	"context"
 )
 
+const listProjectIDsWithClusters = `-- name: ListProjectIDsWithClusters :many
+SELECT
+    id
+FROM
+    projects
+WHERE
+    cluster_count > 0
+    AND DATE(fetched_at) = (
+        SELECT
+            DATE(MAX(fetched_at))
+        FROM
+            projects
+    )
+`
+
+func (q *Queries) ListProjectIDsWithClusters(ctx context.Context) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listProjectIDsWithClusters)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const upsertProject = `-- name: UpsertProject :exec
 INSERT INTO
     projects (
