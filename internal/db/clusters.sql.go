@@ -7,7 +7,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"strings"
 )
 
@@ -80,8 +79,8 @@ type UpsertClusterParams struct {
 	CloudProvider   string
 	Region          string
 	CreateTimestamp int64
-	TidbVersion     sql.NullString
-	ClusterStatus   sql.NullString
+	TidbVersion     string
+	ClusterStatus   string
 }
 
 func (q *Queries) UpsertCluster(ctx context.Context, arg UpsertClusterParams) error {

@@ -3,6 +3,8 @@
         "clusterinfo",
         "icholy",
         "mskcmd",
+        "tiflash",
+        "Vcpu",
         "VPCID",
         "vpcinfo",
         "vpcpeering",

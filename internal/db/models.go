@@ -17,8 +17,8 @@ type Cluster struct {
 	CloudProvider   string
 	Region          string
 	CreateTimestamp int64
-	TidbVersion     sql.NullString
-	ClusterStatus   sql.NullString
+	TidbVersion     string
+	ClusterStatus   string
 	IsDeleted       bool
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
