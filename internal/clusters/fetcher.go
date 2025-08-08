@@ -149,15 +149,21 @@ func (f *APIClusterFetcher) FetchClusters(ctx context.Context, projectID string,
 	return nil, 0, fmt.Errorf("error from TiDB Cloud API: %s (code: %d, details: %v, endpoint: %s), status: %s", apiError.Message, apiError.Code, apiError.Details, apiEndpoint, resp.Status)
 }
 
-type StoreClusterStore interface {
+// ClusterStore defines an interface for storing cluster metadata.
+type ClusterStore interface {
 	StoreClusters(ctx context.Context, clusters Clusters) error
 }
 
+// DBClusterStore represents a database-backed implementation for persisting cluster metadata.
+// It wraps a SQL database connection and provides access to pre-defined SQL queries.
 type DBClusterStore struct {
 	conn    *sql.DB
 	Queries *db.Queries
 }
 
+// NewDBClusterStore initializes a new DBClusterStore using the given DSN and optional connection pool settings.
+// It opens a connection to the database, verifies connectivity, and prepares SQLC-generated query methods.
+// Returns an error if the connection fails or cannot be verified.
 func NewDBClusterStore(dsn string, poolConfig *db.PoolConfig) (*DBClusterStore, error) {
 	conn, err := sql.Open("mysql", dsn)
 	if err != nil {
@@ -183,6 +189,9 @@ func NewDBClusterStore(dsn string, poolConfig *db.PoolConfig) (*DBClusterStore, 
 	}, nil
 }
 
+// StoreClusters inserts or updates the given list of clusters into the database within a transaction scope.
+// If any operation fails, the transaction will be rolled back and the error returned.
+// This method is a no-op if the input slice is empty.
 func (s *DBClusterStore) StoreClusters(ctx context.Context, clusters Clusters) error {
 	if len(clusters) == 0 {
 		return nil // No clusters to store, nothing to do
@@ -227,6 +236,8 @@ func (s *DBClusterStore) StoreClusters(ctx context.Context, clusters Clusters) e
 	return nil
 }
 
+// Close closes the underlying database connection held by the DBClusterStore.
+// Returns an error if the connection could not be closed properly.
 func (s *DBClusterStore) Close() error {
 	if s.conn != nil {
 		if err := s.conn.Close(); err != nil {

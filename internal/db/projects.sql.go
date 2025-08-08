@@ -9,6 +9,38 @@ import (
 	"context"
 )
 
+const listActiveProjects = `-- name: ListActiveProjects :many
+SELECT
+    id
+FROM
+    projects
+WHERE
+    cluster_count > 0
+`
+
+func (q *Queries) ListActiveProjects(ctx context.Context) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listActiveProjects)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listProjectIDsWithClusters = `-- name: ListProjectIDsWithClusters :many
 SELECT
     id

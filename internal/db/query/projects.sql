@@ -32,3 +32,11 @@ WHERE
         FROM
             projects
     );
+
+-- name: ListActiveProjects :many
+SELECT
+    id
+FROM
+    projects
+WHERE
+    cluster_count > 0;
