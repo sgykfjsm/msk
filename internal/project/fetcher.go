@@ -160,6 +160,8 @@ type ProjectStore interface {
 	// StoreProjects saves the provided projects to the database.
 	// It returns an error if the operation fails.
 	StoreProjects(ctx context.Context, projects Projects) error
+	// ListActiveProjects queries the projects hosting more than one clusters from the database.
+	ListActiveProjects(ctx context.Context) ([]string, error)
 }
 
 // DBProjectStore implements the ProjectStore interface.
@@ -240,6 +242,15 @@ func (s *DBProjectStore) StoreProjects(ctx context.Context, projects Projects) e
 	}
 
 	return nil
+}
+
+func (s *DBProjectStore) ListActiveProjects(ctx context.Context) ([]string, error) {
+	projects, err := s.Queries.ListActiveProjects(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return projects, nil
 }
 
 // Close closes the database connection.

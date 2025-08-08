@@ -20,7 +20,7 @@ func main() {
 		Commands: []*cli.Command{
 			mskcmd.FetchProjectsCmd,
 			{
-				Name:  "clusterinfo",
+				Name:  "fetch-clusters",
 				Usage: "Get information about TiDB Clusters and save it to a database",
 				Action: func(ctx context.Context, cmd *cli.Command) error {
 					slog.Info("Collecting cluster information...")
@@ -29,7 +29,7 @@ func main() {
 			},
 			{
 				Name:  "generate-notice",
-				Usage: "Generate a notice from the information collected by clusterinfo and save it to S3",
+				Usage: "Generate a notice from the information collected by fetch-clusters and save it to S3",
 				Action: func(ctx context.Context, cmd *cli.Command) error {
 					slog.Info("Generating notice from collected information...")
 					return nil

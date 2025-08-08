@@ -5,8 +5,39 @@
 package db
 
 import (
+	"database/sql"
 	"time"
 )
+
+type Cluster struct {
+	ID              string
+	ProjectID       string
+	Name            string
+	ClusterType     string
+	CloudProvider   string
+	Region          string
+	CreateTimestamp int64
+	TidbVersion     string
+	ClusterStatus   string
+	IsDeleted       bool
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+	DeletedAt       sql.NullTime
+}
+
+type ClusterNode struct {
+	ClusterID        string
+	NodeName         string
+	ComponentType    string
+	AvailabilityZone string
+	NodeSize         string
+	StorageSizeGib   sql.NullInt32
+	Status           string
+	IsDeleted        bool
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	DeletedAt        sql.NullTime
+}
 
 type Project struct {
 	ID              string
