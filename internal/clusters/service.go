@@ -33,12 +33,12 @@ func (c *clusterService) FetchAndStoreClusters(ctx context.Context, projectIDs [
 			// 1. Fetch cluster info using projectID
 			clusters, total, err := c.fetcher.FetchClusters(ctx, projectID, page, pageSize)
 			if err != nil {
-				return 0, 0, fmt.Errorf("failed to fetch clusters for project %s: %w", projectID, err)
+				return 0, 0, fmt.Errorf("failed to fetch clusters for project %s with pageSize %d: %w", projectID, pageSize, err)
 			}
 
 			// 2. Store cluster info retrieving from TiDB Cloud API
 			if err := c.store.StoreClusters(ctx, clusters); err != nil {
-				return 0, 0, fmt.Errorf("failed to store %d clusters for project %s: %w", len(clusters), projectID, err)
+				return 0, 0, fmt.Errorf("failed to store %d clusters for project %s with pageSize %d: %w", len(clusters), projectID, pageSize, err)
 			}
 
 			// 3. If the number of processed cluster is less than total, repeat the process.

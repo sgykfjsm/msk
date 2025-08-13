@@ -33,8 +33,10 @@ func TestClusterService_FetchAndStoreClusters_Success(t *testing.T) {
 		Return(nil).
 		Times(1)
 
-	err := svc.FetchAndStoreClusters(ctx, projectIDs, pageSize)
+	actualProjectNum, actualClusterNum, err := svc.FetchAndStoreClusters(ctx, projectIDs, pageSize)
 	require.NoError(t, err)
+	require.Equal(t, len(projectIDs), actualProjectNum)
+	require.Equal(t, len(mockClusters), actualClusterNum)
 }
 
 func TestClusterService_FetchAndStoreClusters_Paging_Success(t *testing.T) {
@@ -77,8 +79,10 @@ func TestClusterService_FetchAndStoreClusters_Paging_Success(t *testing.T) {
 		Return(nil).
 		Times(1)
 
-	err := svc.FetchAndStoreClusters(ctx, projectIDs, pageSize)
+	actualProjectNum, actualClusterNum, err := svc.FetchAndStoreClusters(ctx, projectIDs, pageSize)
 	require.NoError(t, err)
+	require.Equal(t, len(projectIDs), actualProjectNum)
+	require.Equal(t, len(mockClusters1)+len(mockClusters2), actualClusterNum)
 }
 
 func TestClusterService_FetchAndStoreClusters_FetchError(t *testing.T) {
@@ -99,8 +103,10 @@ func TestClusterService_FetchAndStoreClusters_FetchError(t *testing.T) {
 		Return(nil, 0, errors.New("failed to fetch clusters")).
 		Times(1)
 
-	err := svc.FetchAndStoreClusters(ctx, projectIDs, pageSize)
+	actualProjectNum, actualClusterNum, err := svc.FetchAndStoreClusters(ctx, projectIDs, pageSize)
 	require.Error(t, err)
+	require.Equal(t, 0, actualProjectNum)
+	require.Equal(t, 0, actualClusterNum)
 }
 
 func TestClusterService_FetchAndStoreClusters_StoreError(t *testing.T) {
@@ -127,6 +133,8 @@ func TestClusterService_FetchAndStoreClusters_StoreError(t *testing.T) {
 		Return(errors.New("failed to store clusters")).
 		Times(1)
 
-	err := svc.FetchAndStoreClusters(ctx, projectIDs, pageSize)
+	actualProjectNum, actualClusterNum, err := svc.FetchAndStoreClusters(ctx, projectIDs, pageSize)
 	require.Error(t, err)
+	require.Equal(t, 0, actualProjectNum)
+	require.Equal(t, 0, actualClusterNum)
 }
