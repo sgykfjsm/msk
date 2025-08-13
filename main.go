@@ -19,14 +19,7 @@ func main() {
 
 		Commands: []*cli.Command{
 			mskcmd.FetchProjectsCmd,
-			{
-				Name:  "fetch-clusters",
-				Usage: "Get information about TiDB Clusters and save it to a database",
-				Action: func(ctx context.Context, cmd *cli.Command) error {
-					slog.Info("Collecting cluster information...")
-					return nil
-				},
-			},
+			mskcmd.FetchClustersCmd,
 			{
 				Name:  "generate-notice",
 				Usage: "Generate a notice from the information collected by fetch-clusters and save it to S3",

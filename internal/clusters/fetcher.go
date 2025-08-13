@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"path"
 	"strconv"
 	"time"
 
@@ -84,7 +85,7 @@ type APIClusterFetcher struct {
 	EndpointBase string
 }
 
-const defaultAPIEndpointBase = "https://api.tidbcloud.com/api/v1beta/projects"
+const defaultAPIEndpointBase = "https://api.tidbcloud.com/api/v1beta"
 
 // NewAPIClusterFetcher returns a new APIClusterFetcher with the given HTTP client and API endpoint base URL.
 // This function allows for injection of custom clients for testing and tracing.
@@ -101,7 +102,7 @@ func NewAPIClusterFetcher(client *http.Client, endpointBase string) *APIClusterF
 // If this value is greater than the number of returned clusters, it indicates more clusters can be fetched on subsequent pages.
 // The page and pageSize parameters can be used for pagination.
 func (f *APIClusterFetcher) FetchClusters(ctx context.Context, projectID string, page, pageSize int) (Clusters, int, error) {
-	apiEndpoint := fmt.Sprintf("%s/%s/clusters", f.EndpointBase, projectID)
+	apiEndpoint := path.Join(f.EndpointBase, "projects", projectID, "clusters")
 
 	req, err := http.NewRequest("GET", apiEndpoint, nil)
 	if err != nil {
