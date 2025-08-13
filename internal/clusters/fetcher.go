@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"path"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -102,7 +102,10 @@ func NewAPIClusterFetcher(client *http.Client, endpointBase string) *APIClusterF
 // If this value is greater than the number of returned clusters, it indicates more clusters can be fetched on subsequent pages.
 // The page and pageSize parameters can be used for pagination.
 func (f *APIClusterFetcher) FetchClusters(ctx context.Context, projectID string, page, pageSize int) (Clusters, int, error) {
-	apiEndpoint := path.Join(f.EndpointBase, "projects", projectID, "clusters")
+	apiEndpoint, err := url.JoinPath(f.EndpointBase, "projects", projectID, "clusters")
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to construct API endpoint URL started with %s wih projectID %s: %w", f.EndpointBase, projectID, err)
+	}
 
 	req, err := http.NewRequest("GET", apiEndpoint, nil)
 	if err != nil {
