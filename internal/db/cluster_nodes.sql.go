@@ -12,6 +12,8 @@ import (
 )
 
 const markClusterNodesAsDeleted = `-- name: MarkClusterNodesAsDeleted :exec
+;  -- we don't need to reset delete flag because TiDB Cloud neither reuse node name nor recover retired node.
+
 UPDATE cluster_nodes
 SET
     is_deleted = TRUE,
@@ -19,7 +21,7 @@ SET
 where
 
     cluster_id = ?
-    AND node_name NOT IN(/*SLICE:node_name*/?)
+    AND node_name NOT IN (/*SLICE:node_name*/?)
     AND is_deleted = FALSE
 `
 
@@ -68,7 +70,7 @@ ON DUPLICATE KEY UPDATE
 type UpsertClusterNodeParams struct {
 	ClusterID        string
 	NodeName         string
-	ComponentType    string
+	ComponentType    ClusterNodesComponentType
 	AvailabilityZone string
 	NodeSize         string
 	StorageSizeGib   sql.NullInt32
