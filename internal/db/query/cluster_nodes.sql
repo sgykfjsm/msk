@@ -17,6 +17,7 @@ ON DUPLICATE KEY UPDATE
     node_size = VALUES(node_size),
     storage_size_gib = VALUES(storage_size_gib),
     status = VALUES(status);
+    ;  -- we don't need to reset delete flag because TiDB Cloud neither reuse node name nor recover retired node.
 
 -- name: MarkClusterNodesAsDeleted :exec
 UPDATE cluster_nodes
@@ -26,5 +27,5 @@ SET
 where
 
     cluster_id = ?
-    AND node_name NOT IN(sqlc.slice('node_name'))
+    AND node_name NOT IN (sqlc.slice('node_name'))
     AND is_deleted = FALSE;

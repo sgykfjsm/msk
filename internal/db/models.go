@@ -6,8 +6,54 @@ package db
 
 import (
 	"database/sql"
+	"database/sql/driver"
+	"fmt"
 	"time"
 )
+
+type ClusterNodesComponentType string
+
+const (
+	ClusterNodesComponentTypeTidb    ClusterNodesComponentType = "tidb"
+	ClusterNodesComponentTypeTikv    ClusterNodesComponentType = "tikv"
+	ClusterNodesComponentTypeTiflash ClusterNodesComponentType = "tiflash"
+	ClusterNodesComponentTypeUnknown ClusterNodesComponentType = "unknown"
+)
+
+func (e *ClusterNodesComponentType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = ClusterNodesComponentType(s)
+	case string:
+		*e = ClusterNodesComponentType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for ClusterNodesComponentType: %T", src)
+	}
+	return nil
+}
+
+type NullClusterNodesComponentType struct {
+	ClusterNodesComponentType ClusterNodesComponentType
+	Valid                     bool // Valid is true if ClusterNodesComponentType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullClusterNodesComponentType) Scan(value interface{}) error {
+	if value == nil {
+		ns.ClusterNodesComponentType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.ClusterNodesComponentType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullClusterNodesComponentType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.ClusterNodesComponentType), nil
+}
 
 type Cluster struct {
 	ID              string
@@ -28,7 +74,7 @@ type Cluster struct {
 type ClusterNode struct {
 	ClusterID        string
 	NodeName         string
-	ComponentType    string
+	ComponentType    ClusterNodesComponentType
 	AvailabilityZone string
 	NodeSize         string
 	StorageSizeGib   sql.NullInt32
