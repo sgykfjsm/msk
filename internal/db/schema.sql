@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS clusters (
 CREATE TABLE IF NOT EXISTS cluster_nodes (
     cluster_id VARCHAR(64) NOT NULL,
     node_name VARCHAR(128) NOT NULL,
-    component_type ENUM('tidb', 'tikv', 'tiflash', 'unknown') NOT NULL,
+    component_type VARCHAR(32) NOT NULL,
     availability_zone VARCHAR(64) NOT NULL,
     node_size VARCHAR(32) NOT NULL,
     storage_size_gib INT,
