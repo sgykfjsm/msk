@@ -5,136 +5,126 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
-func TestClusterService_FetchAndStoreClusters_Success(t *testing.T) {
+func TestClusterService_FetchAndStoreClusters(t *testing.T) {
 	ctx := context.Background()
+	projectID := "project-1"
+	pageSize := 2
 
-	// Create a mock mockFetcher and store
-	mockFetcher := NewMockClusterFetcher(t)
-	mockStore := NewMockClusterStore(t)
-	svc := NewClusterService(mockFetcher, mockStore)
+	clustersPage1 := Clusters{
+		{ID: "cluster-1", ProjectID: projectID},
+		{ID: "cluster-2", ProjectID: projectID},
+	}
+	clustersPage2 := Clusters{
+		{ID: "cluster-3", ProjectID: projectID},
+	}
 
-	projectID := "1"
-	projectIDs := []string{projectID}
-	mockClusters := Clusters([]Cluster{{ID: "10", ProjectID: projectID}})
-	pageSize := 1
+	tests := []struct {
+		name                      string
+		projectIDs                []string
+		setupMocks                func(fetcher *MockClusterFetcher, store *MockClusterStore)
+		expectedProcessedProjects int
+		expectedProcessedClusters int
+		expectedDeletedClusters   int
+		expectErr                 bool
+		expectedErrMsg            string
+	}{
+		{
+			name:       "Success with pagination",
+			projectIDs: []string{projectID},
+			setupMocks: func(fetcher *MockClusterFetcher, store *MockClusterStore) {
+				// Page 1
+				fetcher.EXPECT().FetchClusters(ctx, projectID, 1, pageSize).Return(clustersPage1, 3, nil).Once()
+				store.EXPECT().StoreClusters(ctx, clustersPage1).Return(nil).Once()
+				// Page 2
+				fetcher.EXPECT().FetchClusters(ctx, projectID, 2, pageSize).Return(clustersPage2, 3, nil).Once()
+				store.EXPECT().StoreClusters(ctx, clustersPage2).Return(nil).Once()
+				store.EXPECT().MarkStaleClustersAsDeleted(ctx, projectID, mock.AnythingOfType("time.Time")).Return(int64(1), nil).Once()
+			},
+			expectedProcessedProjects: 1,
+			expectedProcessedClusters: 3,
+			expectedDeletedClusters:   1,
+			expectErr:                 false,
+		},
+		{
+			name:       "Success with single page",
+			projectIDs: []string{projectID},
+			setupMocks: func(fetcher *MockClusterFetcher, store *MockClusterStore) {
+				fetcher.EXPECT().FetchClusters(ctx, projectID, 1, pageSize).Return(clustersPage1, 2, nil).Once()
+				store.EXPECT().StoreClusters(ctx, clustersPage1).Return(nil).Once()
+				store.EXPECT().MarkStaleClustersAsDeleted(ctx, projectID, mock.AnythingOfType("time.Time")).Return(int64(0), nil).Once()
+			},
+			expectedProcessedProjects: 1,
+			expectedProcessedClusters: 2,
+			expectedDeletedClusters:   0,
+			expectErr:                 false,
+		},
+		{
+			name:       "Fetcher fails on first call",
+			projectIDs: []string{projectID},
+			setupMocks: func(fetcher *MockClusterFetcher, store *MockClusterStore) {
+				fetcher.EXPECT().FetchClusters(ctx, projectID, 1, pageSize).Return(nil, 0, errors.New("API error")).Once()
+			},
+			expectedProcessedProjects: 0,
+			expectedProcessedClusters: 0,
+			expectedDeletedClusters:   0,
+			expectErr:                 true,
+			expectedErrMsg:            "failed to fetch clusters for project project-1",
+		},
+		{
+			name:       "Store fails",
+			projectIDs: []string{projectID},
+			setupMocks: func(fetcher *MockClusterFetcher, store *MockClusterStore) {
+				fetcher.EXPECT().FetchClusters(ctx, projectID, 1, pageSize).Return(clustersPage1, 2, nil).Once()
+				store.EXPECT().StoreClusters(ctx, clustersPage1).Return(errors.New("DB error")).Once()
+			},
+			expectedProcessedProjects: 0,
+			expectedProcessedClusters: 0,
+			expectedDeletedClusters:   0,
+			expectErr:                 true,
+			expectedErrMsg:            "failed to store 2 clusters for project project-1",
+		},
+		{
+			name:       "MarkStaleClustersAsDeleted fails",
+			projectIDs: []string{projectID},
+			setupMocks: func(fetcher *MockClusterFetcher, store *MockClusterStore) {
+				fetcher.EXPECT().FetchClusters(ctx, projectID, 1, pageSize).Return(clustersPage1, 2, nil).Once()
+				store.EXPECT().StoreClusters(ctx, clustersPage1).Return(nil).Once()
+				store.EXPECT().MarkStaleClustersAsDeleted(ctx, projectID, mock.AnythingOfType("time.Time")).Return(int64(0), errors.New("mark stale error")).Once()
+			},
+			expectedProcessedProjects: 0,
+			expectedProcessedClusters: 0,
+			expectedDeletedClusters:   0,
+			expectErr:                 true,
+			expectedErrMsg:            "failed to mark stale clusters as deleted for project project-1",
+		},
+	}
 
-	// Test scenario: Target project has only a single cluster in itself.
-	page := 1
-	mockFetcher.EXPECT().
-		FetchClusters(ctx, projectID, page, pageSize).
-		Return(mockClusters, 1, nil).
-		Times(1)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			mockFetcher := NewMockClusterFetcher(t)
+			mockStore := NewMockClusterStore(t)
+			tt.setupMocks(mockFetcher, mockStore)
 
-	mockStore.EXPECT().
-		StoreClusters(ctx, mockClusters).
-		Return(nil).
-		Times(1)
+			service := NewClusterService(mockFetcher, mockStore)
 
-	actualProjectNum, actualClusterNum, err := svc.FetchAndStoreClusters(ctx, projectIDs, pageSize)
-	require.NoError(t, err)
-	require.Equal(t, len(projectIDs), actualProjectNum)
-	require.Equal(t, len(mockClusters), actualClusterNum)
-}
+			// Act
+			processedProjects, processedClusters, deletedClusters, err := service.FetchAndStoreClusters(ctx, tt.projectIDs, pageSize)
 
-func TestClusterService_FetchAndStoreClusters_Paging_Success(t *testing.T) {
-	ctx := context.Background()
-
-	mockFetcher := NewMockClusterFetcher(t)
-	mockStore := NewMockClusterStore(t)
-	svc := NewClusterService(mockFetcher, mockStore)
-
-	projectID := "1"
-	projectIDs := []string{projectID}
-	mockClusters1 := Clusters([]Cluster{{ID: "10", ProjectID: projectID}})
-	mockClusters2 := Clusters([]Cluster{{ID: "11", ProjectID: projectID}})
-	pageSize := 1
-
-	// Test scenario: TiDB Cloud API returns multiple pages of clusters
-	// so we need to fetch store them all using pagination
-
-	// Page1: Fetcher should return 1 cluster, total 2
-	page := 1
-	mockFetcher.EXPECT().
-		FetchClusters(ctx, projectID, page, pageSize).
-		Return(mockClusters1, 2, nil).
-		Times(1)
-
-	mockStore.EXPECT().
-		StoreClusters(ctx, mockClusters1).
-		Return(nil).
-		Times(1)
-
-	// Page2: Fetcher should return 2 clusters, total 2
-	page = 2
-	mockFetcher.EXPECT().
-		FetchClusters(ctx, projectID, page, pageSize).
-		Return(mockClusters2, 2, nil).
-		Times(1)
-
-	mockStore.EXPECT().
-		StoreClusters(ctx, mockClusters2).
-		Return(nil).
-		Times(1)
-
-	actualProjectNum, actualClusterNum, err := svc.FetchAndStoreClusters(ctx, projectIDs, pageSize)
-	require.NoError(t, err)
-	require.Equal(t, len(projectIDs), actualProjectNum)
-	require.Equal(t, len(mockClusters1)+len(mockClusters2), actualClusterNum)
-}
-
-func TestClusterService_FetchAndStoreClusters_FetchError(t *testing.T) {
-	ctx := context.Background()
-
-	mockFetcher := NewMockClusterFetcher(t)
-	mockStore := NewMockClusterStore(t)
-	svc := NewClusterService(mockFetcher, mockStore)
-
-	projectID := "1"
-	projectIDs := []string{projectID}
-	pageSize := 1
-
-	// Test scenario: Failed to fetch clusters
-	page := 1
-	mockFetcher.EXPECT().
-		FetchClusters(ctx, projectID, page, pageSize).
-		Return(nil, 0, errors.New("failed to fetch clusters")).
-		Times(1)
-
-	actualProjectNum, actualClusterNum, err := svc.FetchAndStoreClusters(ctx, projectIDs, pageSize)
-	require.Error(t, err)
-	require.Equal(t, 0, actualProjectNum)
-	require.Equal(t, 0, actualClusterNum)
-}
-
-func TestClusterService_FetchAndStoreClusters_StoreError(t *testing.T) {
-	ctx := context.Background()
-
-	mockFetcher := NewMockClusterFetcher(t)
-	mockStore := NewMockClusterStore(t)
-	svc := NewClusterService(mockFetcher, mockStore)
-
-	projectID := "1"
-	projectIDs := []string{projectID}
-	mockClusters1 := Clusters([]Cluster{{ID: "10", ProjectID: projectID}})
-	pageSize := 1
-
-	// Test scenario: Failed to store clusters
-	page := 1
-	mockFetcher.EXPECT().
-		FetchClusters(ctx, projectID, page, pageSize).
-		Return(mockClusters1, 1, nil).
-		Times(1)
-
-	mockStore.EXPECT().
-		StoreClusters(ctx, mockClusters1).
-		Return(errors.New("failed to store clusters")).
-		Times(1)
-
-	actualProjectNum, actualClusterNum, err := svc.FetchAndStoreClusters(ctx, projectIDs, pageSize)
-	require.Error(t, err)
-	require.Equal(t, 0, actualProjectNum)
-	require.Equal(t, 0, actualClusterNum)
+			// Assert
+			if tt.expectErr {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tt.expectedErrMsg)
+			} else {
+				require.NoError(t, err)
+			}
+			require.Equal(t, tt.expectedProcessedProjects, processedProjects)
+			require.Equal(t, tt.expectedProcessedClusters, processedClusters)
+			require.Equal(t, tt.expectedDeletedClusters, deletedClusters)
+		})
+	}
 }

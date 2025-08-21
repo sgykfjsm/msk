@@ -21,10 +21,11 @@ UPDATE
     tidb_version = VALUES(tidb_version),
     cluster_status = VALUES(cluster_status);
 
--- name: MarkClustersAsDeleted :exec
+-- name: MarkStaleClustersAsDeleted :execresult
+-- MarkStaleClustersAsDeleted marks clusters as deleted if they have not been updated since the given timestamp.
 UPDATE clusters
 SET is_deleted = TRUE,
     deleted_at = CURRENT_TIMESTAMP
-WHERE project_id = ?
-    AND id NOT IN (sqlc.slice('id'))
+WHERE project_id = sqlc.arg('project_id')
+    AND updated_at < sqlc.arg('synced_at')
     AND is_deleted = FALSE;

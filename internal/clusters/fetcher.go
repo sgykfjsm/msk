@@ -156,6 +156,7 @@ func (f *APIClusterFetcher) FetchClusters(ctx context.Context, projectID string,
 // ClusterStore defines an interface for storing cluster metadata.
 type ClusterStore interface {
 	StoreClusters(ctx context.Context, clusters Clusters) error
+	MarkStaleClustersAsDeleted(ctx context.Context, projectID string, syncedAt time.Time) (int64, error)
 }
 
 // DBClusterStore represents a database-backed implementation for persisting cluster metadata.
@@ -238,6 +239,42 @@ func (s *DBClusterStore) StoreClusters(ctx context.Context, clusters Clusters) e
 	}
 
 	return nil
+}
+
+func (s *DBClusterStore) MarkStaleClustersAsDeleted(ctx context.Context, projectID string, syncedAt time.Time) (rowsAffected int64, err error) {
+	tx, err := s.conn.Begin()
+	if err != nil {
+		return 0, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				err = errors.Join(err, fmt.Errorf("failed to rollback transaction after error: %w", rbErr))
+			}
+		}
+	}()
+
+	qtx := s.Queries.WithTx(tx)
+	values := db.MarkStaleClustersAsDeletedParams{
+		ProjectID: projectID,
+		SyncedAt:  syncedAt,
+	}
+
+	res, err := qtx.MarkStaleClustersAsDeleted(ctx, values)
+	if err != nil {
+		return 0, fmt.Errorf("failed to execute mark stale clusters as deleted for project %s: %w", projectID, err)
+	}
+
+	rowsAffected, err = res.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get rows affected after marking stale clusters: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return rowsAffected, nil
 }
 
 // Close closes the underlying database connection held by the DBClusterStore.
