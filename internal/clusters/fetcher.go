@@ -156,6 +156,7 @@ func (f *APIClusterFetcher) FetchClusters(ctx context.Context, projectID string,
 // ClusterStore defines an interface for storing cluster metadata.
 type ClusterStore interface {
 	StoreClusters(ctx context.Context, clusters Clusters) error
+	StoreClusterNodes(ctx context.Context, clusters Clusters) (int, error)
 }
 
 // DBClusterStore represents a database-backed implementation for persisting cluster metadata.
@@ -196,7 +197,7 @@ func NewDBClusterStore(dsn string, poolConfig *db.PoolConfig) (*DBClusterStore, 
 // StoreClusters inserts or updates the given list of clusters into the database within a transaction scope.
 // If any operation fails, the transaction will be rolled back and the error returned.
 // This method is a no-op if the input slice is empty.
-func (s *DBClusterStore) StoreClusters(ctx context.Context, clusters Clusters) error {
+func (s *DBClusterStore) StoreClusters(ctx context.Context, clusters Clusters) (err error) {
 	if len(clusters) == 0 {
 		return nil // No clusters to store, nothing to do
 	}
@@ -206,6 +207,13 @@ func (s *DBClusterStore) StoreClusters(ctx context.Context, clusters Clusters) e
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				err = errors.Join(err, fmt.Errorf("failed to rollback transaction: %w", rbErr))
+			}
+		}
+	}()
 
 	qtx := s.Queries.WithTx(tx)
 	for _, cluster := range clusters {
@@ -213,7 +221,8 @@ func (s *DBClusterStore) StoreClusters(ctx context.Context, clusters Clusters) e
 		if err != nil {
 			return fmt.Errorf("invalid create_timestamp format for cluster %s(%s): %w", cluster.Name, cluster.ID, err)
 		}
-		values := db.UpsertClusterParams{
+
+		value := db.UpsertClusterParams{
 			ID:              cluster.ID,
 			ProjectID:       cluster.ProjectID,
 			Name:            cluster.Name,
@@ -224,12 +233,8 @@ func (s *DBClusterStore) StoreClusters(ctx context.Context, clusters Clusters) e
 			ClusterStatus:   cluster.Status.ClusterStatus,
 			TidbVersion:     cluster.Status.TidbVersion,
 		}
-		if err := qtx.UpsertCluster(ctx, values); err != nil {
-			upsertErr := fmt.Errorf("failed to upsert cluster %s: %w", cluster.ID, err)
-			if err := tx.Rollback(); err != nil {
-				return errors.Join(upsertErr, fmt.Errorf("failed to rollback transaction: %w", err))
-			}
-			return upsertErr
+		if err := qtx.UpsertCluster(ctx, value); err != nil {
+			return fmt.Errorf("failed to upsert cluster %s: %w", cluster.ID, err)
 		}
 	}
 
@@ -238,6 +243,85 @@ func (s *DBClusterStore) StoreClusters(ctx context.Context, clusters Clusters) e
 	}
 
 	return nil
+}
+
+// StoreClusterNodes store node information in Clusters
+func (s *DBClusterStore) StoreClusterNodes(ctx context.Context, clusters Clusters) (processedNodeNum int, err error) {
+	if len(clusters) == 0 {
+		return 0, nil // No clusters to store, nothing to do
+	}
+
+	tx, err := s.conn.Begin()
+	if err != nil {
+		return 0, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				err = errors.Join(err, fmt.Errorf("failed to rollback transaction: %w", rbErr))
+			}
+		}
+	}()
+
+	qtx := s.Queries.WithTx(tx)
+
+	for _, cluster := range clusters {
+		// store nodes only in Dedicated cluster
+		if cluster.ClusterType != "DEDICATED" {
+			continue
+		}
+
+		nodeGroup := []struct {
+			componentType db.ClusterNodesComponentType
+			nodes         Nodes
+		}{
+			{db.ClusterNodesComponentTypeTidb, cluster.Status.NodeMap.Tidb},
+			{db.ClusterNodesComponentTypeTikv, cluster.Status.NodeMap.Tikv},
+			{db.ClusterNodesComponentTypeTiflash, cluster.Status.NodeMap.Tiflash},
+		}
+
+		for _, group := range nodeGroup {
+			fmt.Printf("DEBUG: Processing cluster %s, found %d nodes of type %s\n", cluster.ID, len(group.nodes), group.componentType)
+			if len(group.nodes) == 0 {
+				continue
+			}
+
+			for _, node := range group.nodes {
+				value := db.UpsertClusterNodeParams{
+					ClusterID:        cluster.ID,
+					NodeName:         node.NodeName,
+					ComponentType:    group.componentType,
+					AvailabilityZone: node.AvailabilityZone,
+					NodeSize:         node.NodeSize,
+					StorageSizeGib:   storageSizeGibForNode(group.componentType, node),
+					Status:           node.Status,
+				}
+
+				if err = qtx.UpsertClusterNode(ctx, value); err != nil {
+					// Rollback is handled by defer
+					return 0, fmt.Errorf("failed to upsert node %s of the cluster (ID: %s): %w", node.NodeName, cluster.ID, err)
+				}
+			}
+			processedNodeNum += len(group.nodes)
+		}
+	}
+
+	if err = tx.Commit(); err != nil {
+		return 0, fmt.Errorf("failed to commit transaction when upserting nodes: %w", err)
+	}
+
+	return processedNodeNum, nil
+}
+
+func storageSizeGibForNode(componentType db.ClusterNodesComponentType, node Node) sql.NullInt32 {
+	switch componentType {
+	case db.ClusterNodesComponentTypeTidb:
+		return sql.NullInt32{Valid: false} // TiDB nodes do not have storage size
+	case db.ClusterNodesComponentTypeTikv, db.ClusterNodesComponentTypeTiflash:
+		return sql.NullInt32{Int32: int32(node.StorageSizeGib), Valid: true}
+	default:
+		return sql.NullInt32{Valid: false} // Unknown component type
+	}
 }
 
 // Close closes the underlying database connection held by the DBClusterStore.

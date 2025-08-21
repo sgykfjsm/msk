@@ -224,10 +224,10 @@ func runFetchClustersCmd(ctx context.Context, c *cli.Command) error {
 	}
 
 	svc := clusters.NewClusterService(fetcher, store)
-	if projectNum, clusterNum, err := svc.FetchAndStoreClusters(ctx, projectIDs, args.PageSize); err != nil {
+	if projectNum, clusterNum, nodeNum, err := svc.FetchAndStoreClusters(ctx, projectIDs, args.PageSize); err != nil {
 		return err
 	} else {
-		fmt.Fprintf(c.Root().Writer, "Clusters fetched and stored successfully. Projects: %d, Clusters: %d\n", projectNum, clusterNum)
+		fmt.Fprintf(c.Root().Writer, "Clusters fetched and stored successfully. Projects: %d, Clusters: %d, Nodes: %d\n", projectNum, clusterNum, nodeNum)
 	}
 
 	return nil

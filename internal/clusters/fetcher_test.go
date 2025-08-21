@@ -2,12 +2,14 @@ package clusters
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/sgykfjsm/msk/internal/db"
 	"github.com/stretchr/testify/require"
 )
 
@@ -128,4 +130,45 @@ func TestAPIClusterFetcher_FetchClusters_DecodeErrorResponseError(t *testing.T) 
 
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to decode error response from TiDB Cloud API")
+}
+
+func TestDBClusterStore_storageSizeGibForNode(t *testing.T) {
+	testCases := []struct {
+		name          string
+		componentType db.ClusterNodesComponentType
+		node          Node
+		expected      sql.NullInt32
+	}{
+		{
+			name:          "Tidb node should have null storage",
+			componentType: db.ClusterNodesComponentTypeTidb,
+			node:          Node{StorageSizeGib: 100}, // This value should be ignored
+			expected:      sql.NullInt32{Valid: false},
+		},
+		{
+			name:          "Tikv node should have valid storage",
+			componentType: db.ClusterNodesComponentTypeTikv,
+			node:          Node{StorageSizeGib: 1024},
+			expected:      sql.NullInt32{Int32: 1024, Valid: true},
+		},
+		{
+			name:          "Tiflash node should have valid storage",
+			componentType: db.ClusterNodesComponentTypeTiflash,
+			node:          Node{StorageSizeGib: 2048},
+			expected:      sql.NullInt32{Int32: 2048, Valid: true},
+		},
+		{
+			name:          "Unknown component type should have null storage",
+			componentType: "some-unknown-type",
+			node:          Node{StorageSizeGib: 500},
+			expected:      sql.NullInt32{Valid: false},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			actual := storageSizeGibForNode(tc.componentType, tc.node)
+			require.Equal(t, tc.expected, actual)
+		})
+	}
 }

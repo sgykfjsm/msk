@@ -150,6 +150,72 @@ func (_m *MockClusterStore) EXPECT() *MockClusterStore_Expecter {
 	return &MockClusterStore_Expecter{mock: &_m.Mock}
 }
 
+// StoreClusterNodes provides a mock function for the type MockClusterStore
+func (_mock *MockClusterStore) StoreClusterNodes(ctx context.Context, clusters Clusters) (int, error) {
+	ret := _mock.Called(ctx, clusters)
+
+	if len(ret) == 0 {
+		panic("no return value specified for StoreClusterNodes")
+	}
+
+	var r0 int
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, Clusters) (int, error)); ok {
+		return returnFunc(ctx, clusters)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, Clusters) int); ok {
+		r0 = returnFunc(ctx, clusters)
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, Clusters) error); ok {
+		r1 = returnFunc(ctx, clusters)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockClusterStore_StoreClusterNodes_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'StoreClusterNodes'
+type MockClusterStore_StoreClusterNodes_Call struct {
+	*mock.Call
+}
+
+// StoreClusterNodes is a helper method to define mock.On call
+//   - ctx context.Context
+//   - clusters Clusters
+func (_e *MockClusterStore_Expecter) StoreClusterNodes(ctx interface{}, clusters interface{}) *MockClusterStore_StoreClusterNodes_Call {
+	return &MockClusterStore_StoreClusterNodes_Call{Call: _e.mock.On("StoreClusterNodes", ctx, clusters)}
+}
+
+func (_c *MockClusterStore_StoreClusterNodes_Call) Run(run func(ctx context.Context, clusters Clusters)) *MockClusterStore_StoreClusterNodes_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 Clusters
+		if args[1] != nil {
+			arg1 = args[1].(Clusters)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockClusterStore_StoreClusterNodes_Call) Return(n int, err error) *MockClusterStore_StoreClusterNodes_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockClusterStore_StoreClusterNodes_Call) RunAndReturn(run func(ctx context.Context, clusters Clusters) (int, error)) *MockClusterStore_StoreClusterNodes_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // StoreClusters provides a mock function for the type MockClusterStore
 func (_mock *MockClusterStore) StoreClusters(ctx context.Context, clusters Clusters) error {
 	ret := _mock.Called(ctx, clusters)
