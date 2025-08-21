@@ -6,6 +6,7 @@ package clusters
 
 import (
 	"context"
+	"time"
 
 	mock "github.com/stretchr/testify/mock"
 )
@@ -150,6 +151,78 @@ func (_m *MockClusterStore) EXPECT() *MockClusterStore_Expecter {
 	return &MockClusterStore_Expecter{mock: &_m.Mock}
 }
 
+// MarkStaleClustersAsDeleted provides a mock function for the type MockClusterStore
+func (_mock *MockClusterStore) MarkStaleClustersAsDeleted(ctx context.Context, projectID string, syncedAt time.Time) (int64, error) {
+	ret := _mock.Called(ctx, projectID, syncedAt)
+
+	if len(ret) == 0 {
+		panic("no return value specified for MarkStaleClustersAsDeleted")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, time.Time) (int64, error)); ok {
+		return returnFunc(ctx, projectID, syncedAt)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, time.Time) int64); ok {
+		r0 = returnFunc(ctx, projectID, syncedAt)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, time.Time) error); ok {
+		r1 = returnFunc(ctx, projectID, syncedAt)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockClusterStore_MarkStaleClustersAsDeleted_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'MarkStaleClustersAsDeleted'
+type MockClusterStore_MarkStaleClustersAsDeleted_Call struct {
+	*mock.Call
+}
+
+// MarkStaleClustersAsDeleted is a helper method to define mock.On call
+//   - ctx context.Context
+//   - projectID string
+//   - syncedAt time.Time
+func (_e *MockClusterStore_Expecter) MarkStaleClustersAsDeleted(ctx interface{}, projectID interface{}, syncedAt interface{}) *MockClusterStore_MarkStaleClustersAsDeleted_Call {
+	return &MockClusterStore_MarkStaleClustersAsDeleted_Call{Call: _e.mock.On("MarkStaleClustersAsDeleted", ctx, projectID, syncedAt)}
+}
+
+func (_c *MockClusterStore_MarkStaleClustersAsDeleted_Call) Run(run func(ctx context.Context, projectID string, syncedAt time.Time)) *MockClusterStore_MarkStaleClustersAsDeleted_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 time.Time
+		if args[2] != nil {
+			arg2 = args[2].(time.Time)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockClusterStore_MarkStaleClustersAsDeleted_Call) Return(n int64, err error) *MockClusterStore_MarkStaleClustersAsDeleted_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockClusterStore_MarkStaleClustersAsDeleted_Call) RunAndReturn(run func(ctx context.Context, projectID string, syncedAt time.Time) (int64, error)) *MockClusterStore_MarkStaleClustersAsDeleted_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // StoreClusters provides a mock function for the type MockClusterStore
 func (_mock *MockClusterStore) StoreClusters(ctx context.Context, clusters Clusters) error {
 	ret := _mock.Called(ctx, clusters)
@@ -235,20 +308,35 @@ func (_m *MockClusterService) EXPECT() *MockClusterService_Expecter {
 }
 
 // FetchAndStoreClusters provides a mock function for the type MockClusterService
-func (_mock *MockClusterService) FetchAndStoreClusters(ctx context.Context, projectIDs []string, pageSize int) error {
+func (_mock *MockClusterService) FetchAndStoreClusters(ctx context.Context, projectIDs []string, pageSize int) (int, int, error) {
 	ret := _mock.Called(ctx, projectIDs, pageSize)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FetchAndStoreClusters")
 	}
 
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, []string, int) error); ok {
+	var r0 int
+	var r1 int
+	var r2 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string, int) (int, int, error)); ok {
+		return returnFunc(ctx, projectIDs, pageSize)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string, int) int); ok {
 		r0 = returnFunc(ctx, projectIDs, pageSize)
 	} else {
-		r0 = ret.Error(0)
+		r0 = ret.Get(0).(int)
 	}
-	return r0
+	if returnFunc, ok := ret.Get(1).(func(context.Context, []string, int) int); ok {
+		r1 = returnFunc(ctx, projectIDs, pageSize)
+	} else {
+		r1 = ret.Get(1).(int)
+	}
+	if returnFunc, ok := ret.Get(2).(func(context.Context, []string, int) error); ok {
+		r2 = returnFunc(ctx, projectIDs, pageSize)
+	} else {
+		r2 = ret.Error(2)
+	}
+	return r0, r1, r2
 }
 
 // MockClusterService_FetchAndStoreClusters_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FetchAndStoreClusters'
@@ -287,12 +375,12 @@ func (_c *MockClusterService_FetchAndStoreClusters_Call) Run(run func(ctx contex
 	return _c
 }
 
-func (_c *MockClusterService_FetchAndStoreClusters_Call) Return(err error) *MockClusterService_FetchAndStoreClusters_Call {
-	_c.Call.Return(err)
+func (_c *MockClusterService_FetchAndStoreClusters_Call) Return(n int, n1 int, err error) *MockClusterService_FetchAndStoreClusters_Call {
+	_c.Call.Return(n, n1, err)
 	return _c
 }
 
-func (_c *MockClusterService_FetchAndStoreClusters_Call) RunAndReturn(run func(ctx context.Context, projectIDs []string, pageSize int) error) *MockClusterService_FetchAndStoreClusters_Call {
+func (_c *MockClusterService_FetchAndStoreClusters_Call) RunAndReturn(run func(ctx context.Context, projectIDs []string, pageSize int) (int, int, error)) *MockClusterService_FetchAndStoreClusters_Call {
 	_c.Call.Return(run)
 	return _c
 }

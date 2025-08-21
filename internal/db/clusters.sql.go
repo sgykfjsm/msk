@@ -7,37 +7,27 @@ package db
 
 import (
 	"context"
-	"strings"
+	"database/sql"
+	"time"
 )
 
-const markClustersAsDeleted = `-- name: MarkClustersAsDeleted :exec
+const markStaleClustersAsDeleted = `-- name: MarkStaleClustersAsDeleted :execresult
 UPDATE clusters
 SET is_deleted = TRUE,
     deleted_at = CURRENT_TIMESTAMP
 WHERE project_id = ?
-    AND id NOT IN (/*SLICE:id*/?)
+    AND updated_at < ?
     AND is_deleted = FALSE
 `
 
-type MarkClustersAsDeletedParams struct {
+type MarkStaleClustersAsDeletedParams struct {
 	ProjectID string
-	ID        []string
+	SyncedAt  time.Time
 }
 
-func (q *Queries) MarkClustersAsDeleted(ctx context.Context, arg MarkClustersAsDeletedParams) error {
-	query := markClustersAsDeleted
-	var queryParams []interface{}
-	queryParams = append(queryParams, arg.ProjectID)
-	if len(arg.ID) > 0 {
-		for _, v := range arg.ID {
-			queryParams = append(queryParams, v)
-		}
-		query = strings.Replace(query, "/*SLICE:id*/?", strings.Repeat(",?", len(arg.ID))[1:], 1)
-	} else {
-		query = strings.Replace(query, "/*SLICE:id*/?", "NULL", 1)
-	}
-	_, err := q.db.ExecContext(ctx, query, queryParams...)
-	return err
+// MarkStaleClustersAsDeleted marks clusters as deleted if they have not been updated since the given timestamp.
+func (q *Queries) MarkStaleClustersAsDeleted(ctx context.Context, arg MarkStaleClustersAsDeletedParams) (sql.Result, error) {
+	return q.db.ExecContext(ctx, markStaleClustersAsDeleted, arg.ProjectID, arg.SyncedAt)
 }
 
 const upsertCluster = `-- name: UpsertCluster :exec
