@@ -25,20 +25,6 @@ type Cluster struct {
 	DeletedAt       sql.NullTime
 }
 
-type ClusterNode struct {
-	ClusterID        string
-	NodeName         string
-	ComponentType    string
-	AvailabilityZone string
-	NodeSize         string
-	StorageSizeGib   sql.NullInt32
-	Status           string
-	IsDeleted        bool
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	DeletedAt        sql.NullTime
-}
-
 type Project struct {
 	ID              string
 	OrgID           string
