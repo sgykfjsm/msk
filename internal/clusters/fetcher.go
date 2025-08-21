@@ -249,7 +249,7 @@ func (s *DBClusterStore) MarkStaleClustersAsDeleted(ctx context.Context, project
 	defer func() {
 		if err != nil {
 			if rbErr := tx.Rollback(); rbErr != nil {
-				err = fmt.Errorf("failed to rollback transaction after error: %w", rbErr)
+				err = errors.Join(err, fmt.Errorf("failed to rollback transaction after error: %w", rbErr))
 			}
 		}
 	}()
