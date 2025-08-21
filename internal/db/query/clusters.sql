@@ -26,5 +26,5 @@ UPDATE clusters
 SET is_deleted = TRUE,
     deleted_at = CURRENT_TIMESTAMP
 WHERE project_id = ?
-    AND id NOT IN(sqlc.slice('id'))
+    AND id NOT IN (sqlc.slice('id'))
     AND is_deleted = FALSE;

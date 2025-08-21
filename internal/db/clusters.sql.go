@@ -15,7 +15,7 @@ UPDATE clusters
 SET is_deleted = TRUE,
     deleted_at = CURRENT_TIMESTAMP
 WHERE project_id = ?
-    AND id NOT IN(/*SLICE:id*/?)
+    AND id NOT IN (/*SLICE:id*/?)
     AND is_deleted = FALSE
 `
 
@@ -53,22 +53,15 @@ INSERT INTO clusters (
         cluster_status
     )
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY
-UPDATE project_id =
-VALUES(project_id),
-    name =
-VALUES(name),
-    cluster_type =
-VALUES(cluster_type),
-    cloud_provider =
-VALUES(cloud_provider),
-    region =
-VALUES(region),
-    create_timestamp =
-VALUES(create_timestamp),
-    tidb_version =
-VALUES(tidb_version),
-    cluster_status =
-VALUES(cluster_status)
+UPDATE
+    project_id = VALUES(project_id),
+    name = VALUES(name),
+    cluster_type = VALUES(cluster_type),
+    cloud_provider = VALUES(cloud_provider),
+    region = VALUES(region),
+    create_timestamp = VALUES(create_timestamp),
+    tidb_version = VALUES(tidb_version),
+    cluster_status = VALUES(cluster_status)
 `
 
 type UpsertClusterParams struct {
